@@ -16,39 +16,69 @@ export interface DropdownSettings {
     classes?: string
 }
 
+export interface ResponseData {
+    entity: Entity[];
+    message: string;
+}
+
+export interface Entity {
+    firstName: string;
+    lastName: string;
+    lognName: string;
+}
+
 @Component({
     selector: 'mselect-filter',
-    template: `<angular2-multiselect [data]="dropdownList" 
-    [(ngModel)]="selectedItems" 
-    [settings]="dropdownSettings" 
-    (onSelect)="onItemSelect($event)"
-    (onDeSelect)="OnItemDeSelect($event)" 
-    (onSelectAll)="onSelectAll($event)" 
-    (onDeSelectAll)="onDeSelectAll($event)">
-    </angular2-multiselect>`
+    template: `<angular2-multiselect [data]="itemList" [(ngModel)]="selectedItems" [settings]="settings" (onSelect)="onItemSelect($event)"
+    (onDeSelect)="OnItemDeSelect($event)" (onSelectAll)="onSelectAll($event)" (onDeSelectAll)="onDeSelectAll($event)">
+    <c-search>
+         <ng-template>
+             <input type="text" (keyup)="onSearch($event)" placeholder="Search countries" style="border: none;width: 100%; height: 100%;outline: none;"/>
+         </ng-template>
+    </c-search>
+    <c-item>
+        <ng-template let-item="item">
+            <label style="color: #333;width: 150px;">{{item.name}}</label>
+            <img [src]="item.flag" style="width: 30px; border: 1px solid #efefef;margin-right: 0px;" />
+            <label>{{item.capital}}</label>
+        </ng-template>
+    </c-item>
+</angular2-multiselect>`
 })
 export class MselectFilterComponent extends DefaultFilter implements OnInit {
-    dropdownList: Array<any> = [];
-    selectedItems: Array<any> = [];
-    dropdownSettings: DropdownSettings = {};
+
+    itemList: any = [];
+    selectedItems: any = [];
+    settings = {};
 
     constructor(private http: HttpClient) {
         super()
     }
 
     ngOnInit() {
-        const config: Config = this.column.getFilterConfig();
-        this.dropdownList = config.dropdownList || [];
-        this.selectedItems = config.selectedItems || [];
-        let setting = {
-            singleSelection: false,
-            text: "Select",
-            selectAllText: "Select All",
+
+        this.settings = {
+            text: "Select Countries",
+            selectAllText: 'Select All',
             unSelectAllText: 'UnSelect All',
+            classes: "myclass custom-class",
+            primaryKey: "alpha3Code",
+            labelKey: "name",
+            noDataLabel: "Search Countries...",
             enableSearchFilter: true,
-            classes: ""
+            searchBy: ['name', 'capital']
         };
-        this.dropdownSettings = Object.assign(setting, config.dropdownSettings);
+    }
+    onSearch(evt: any) {
+        console.log(evt.target.value);
+        this.itemList = [];
+        this.http.get('https://restcountries.eu/rest/v2/name/' + evt.target.value + '?fulltext=true')
+            .subscribe(res => {
+                console.log(res);
+                this.itemList = res;
+            }, error => {
+
+            });
     }
     onItemSelect(item: any) {
         this.updateQuery();
